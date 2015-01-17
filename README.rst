@@ -17,7 +17,7 @@ The interface
 
       Creates a GIT repository inside ``static/`` directory.
 
-``generate [--domain=<local-address>]``
+``generate [--domain=<local-address>] [--dir=<path>] [--target=<remote-address>] [--replace-all=<true|false>]``
 
       Generates static pages from locally running Ghost instance.
 
@@ -37,6 +37,15 @@ Pages.
 Buster assumes you have ``static/`` folder in your current directory (or
 creates one during ``setup`` command). You can specify custom directory
 path using ``[--dir=<path>]`` option to any of the above commands.
+
+The ``[--replace-all=<true|false>]`` option switches between replacing
+all urls buster can find, or only ``href`` attributes in ``a`` tags.
+
+The ``[--target=<remote-address>]`` option let's you choose the target
+domain and root directory of the generated site. This is especially
+needed for the RSS/Atom feed that would otherwise point to ``--domain``.
+The option provides an alternative to changing your blog URL in Ghost's
+config.js (see below).
 
 Don't forget to change your blog URL in config.js in Ghost.
 
@@ -68,6 +77,15 @@ installed via ``pip``:
    command line interfaces *easily*.
 -  `GitPython <https://github.com/gitpython-developers/GitPython>`__:
    Python interface for GIT.
+   `BeautifulSoup4 <http://www.crummy.com/software/BeautifulSoup/>`__:
+   Painlessly parses and creates (x)HTML(5)
+   `lxml <https://github.com/lxml/lxml/>`__: XML/HTML processor.
+
+Example
+_______
+
+Generate a static version of your ghost blog with all links replaces via
+``buster generate --domain=http://localhost:2368 --target=https://foo.com --replace-all=yes``
 
 Ghost. What?
 ------------
