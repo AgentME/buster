@@ -10,29 +10,39 @@ Start with a clean, no commits Github repository.
 
 Warning! This project is a hack. It's not official. But it works for me.
 
-The interface
--------------
+The interface commands
+----------------------
 
-``setup [--gh-repo=<repo-url>]``
+``setup [--path output/dir] repository``
 
-      Creates a GIT repository inside ``static/`` directory.
+      Creates a GIT repository inside ``--path`` directory.
 
-``generate [--domain=<local-address>] [--dir=<path>] [--target=<remote-address>] [--replace-all=<true|false>]``
+``generate [--path output/dir] (--replace-all | --replace-tags) [source-url] [target-url]``
 
       Generates static pages from locally running Ghost instance.
+``--replace-all`` substitutes all ``source-url`` instances with value of ``target-url``
 
-``preview``
+``preview [--path [output/dir]]``
 
       Preview what's generated on ``localhost:9000``.
 
-``deploy``
+``deploy [--path [output/dir]]``
 
       Commits and deploys changes static files to Github repository.
 
-``add-domain <domain-name>``
+``add-domain [--path [output/dir]] target-domain``
 
       Adds CNAME file with custom domain name as required by Github
 Pages.
+
+``buster command -h``
+      Outputs additional usage information for a command
+
+``buster -h``
+      Outputs top-level help
+
+``buster -v``
+      Prints the current buster version.
 
 Buster assumes you have ``static/`` folder in your current directory (or
 creates one during ``setup`` command). You can specify custom directory
@@ -73,8 +83,8 @@ Requirements
 The following python packages would be installed automatically when
 installed via ``pip``:
 
--  `docopt <https://github.com/docopt/docopt>`__: Creates beautiful
-   command line interfaces *easily*.
+-  `argparse <https://docs.python.org/2/library/argparse.html>`__: Creates 
+   powerful, functional command line interfaces.
 -  `GitPython <https://github.com/gitpython-developers/GitPython>`__:
    Python interface for GIT.
    `BeautifulSoup4 <http://www.crummy.com/software/BeautifulSoup/>`__:
@@ -85,7 +95,7 @@ Example
 _______
 
 Generate a static version of your ghost blog with all links replaces via
-``buster generate --domain=http://localhost:2368 --target=https://foo.com --replace-all=yes``
+``buster generate http://localhost:2368 https://foo.com --path /output/dir --replace-all``
 
 Ghost. What?
 ------------
@@ -120,3 +130,5 @@ new one. Pull requests welcome!
 
 *Made with* `jugaad <http://en.wikipedia.org/wiki/Jugaad>`__ *in*
 `Dilli <http://en.wikipedia.org/wiki/Delhi>`__.
+
+*Powered by ectoplasm.*

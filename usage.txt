@@ -1,6 +1,6 @@
 """Ghost Buster. Static site generator for Ghost.
 Usage:
-  buster setup [-h] [-p output/dir] repository
+  buster setup [-h] [--path output/dir] repository
   buster generate [-h] [--path output/dir] (--replace-all | --replace-tags) [source-url] [target-url]
   buster preview [-h] [--path [output/dir]]
   buster deploy [-h] [--path [output/dir]]

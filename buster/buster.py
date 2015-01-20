@@ -19,20 +19,11 @@ def main():
     
 # Declare argparse options
     parser = argparse.ArgumentParser(description='Ghost Buster. Static site generator for Ghost.', 
-        version='0.1.3.bs4.2', 
+        version='0.1.3.bs4.3', 
         prog='buster', 
         add_help=True,
         epilog='Powered by ectoplasm.',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        usage='''
-        buster setup [-h] [-p output/dir] repository
-        buster generate [-h] [--path output/dir] (--replace-all | --replace-tags) [source-url] [target-url]
-        buster preview [-h] [--path [output/dir]]
-        buster deploy [-h] [--path [output/dir]]
-        buster add-domain [-h] [--path [output/dir]] target-domain
-        buster -h, --help
-        buster -v, --version
-        ''')
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser._optionals.title = "options"
 
 # Init subparsers
@@ -127,22 +118,29 @@ def main():
             # step 1:
             # load HTML/XML in lxml
             if parser == "xml": # parser for XML that keeps CDATA elements (beautifulsoup doesn't)
+                print "Fixing XML"
                 parser = etree.XMLParser(encoding=encoding, strip_cdata=False, resolve_entities=True)
                 data = etree.XML(data, parser)
                 # format the parsed xml for output (keep all non-ascii chars inside CDATA)
                 data = etree.tostring(data, pretty_print=True, encoding=encoding)
             if parser == "lxml": # parser for HTML ("lenient" setting for html5)
+                print "Fixing HTML"
 
                 # the following should work, but spits out utf-8 numeric character references...
-
+                # TODO: FIXME
                 # parser = etree.HTMLParser(encoding=encoding, strip_cdata=False)
                 # if isinstance(data, str):
                 #     data = unicode(data, encoding)
                 # data = etree.parse(StringIO(data), parser)
                 # data = html.tostring(data.getroot(), pretty_print=True, method="html")
-                # data = u'<!DOCTYPE html>\n' + data
+                # data = u'<!DOCTYPE html>\n' + unicode(data)
+
+                # go through fixTagsOnly (we'll be calling bs4 twice until above is fixed...)
+                data = fixTagsOnly(data, parser, encoding)
                 
-                # BeautifulSoup outputs html entities with formatter="html". lxml above should be faster
+                # BeautifulSoup outputs html entities with formatter="html" (if you need them).
+                # lxml above should be faster, but outputs utf-8 numeric char refs
+                print "Fixing remaining links"
                 data = BeautifulSoup(data, "html5lib").prettify(encoding,formatter="minimal")
                 
             # step 2:
@@ -155,20 +153,24 @@ def main():
             data = url_suffix_regex.sub(repl, data)
             return data
 
+        def fixTagsOnly(data, parser, encoding):
+            print "Fixing tags"
+            soup = BeautifulSoup(data, parser) # TODO: replace beautifulsoup with lxml (still beats pyQuery, though)
+            # adjust all href attributes of html-link elements
+            for a in soup.findAll('a'):                                                 # for each <a> element
+                if not abs_url_regex.search(a['href']):                                 # that is not an absolute URL
+                    new_href = re.sub(r'rss/index\.html$', 'rss/index.rss', a['href'])  # adjust href 1 (rss feed)
+                    new_href = re.sub(r'/index\.html$', '/', new_href)                  # adjust href 2 (dir index),
+                    print "\t", a['href'], "=>", new_href                               # brag about it,
+                    a['href'] = a['href'].replace(a['href'], new_href)                  # perform replacement, and
+            return soup.prettify(encoding,formatter="html") # return pretty utf-8 html with encoded html entities
+            
         def fixUrls(data, parser, encoding):
             # Is this is a HTML document AND are we looking only for <a> tags?
             if parser == 'lxml' and not args.replace:
-                soup = BeautifulSoup(data, parser) # TODO: replace beautifulsoup with lxml (still beats pyQuery, though)
-                # adjust all href attributes of html-link elements
-                for a in soup.findAll('a'):                                                 # for each <a> element
-                    if not abs_url_regex.search(a['href']):                                 # that is not an absolute URL
-                        new_href = re.sub(r'rss/index\.html$', 'rss/index.rss', a['href'])  # adjust href 1 (rss feed)
-                        new_href = re.sub(r'/index\.html$', '/', new_href)                  # adjust href 2 (dir index),
-                        print "\t", a['href'], "=>", new_href                               # brag about it,
-                        a['href'] = a['href'].replace(a['href'], new_href)                  # perform replacement, and
-                return soup.prettify(encoding,formatter="html") # return pretty utf-8 html with encoded html entities
-
-            # Otherwise, fall through to fixAllUrls() for all other cases
+                return fixTagsOnly(data, parser, encoding)
+                
+            # Otherwise, fall through to fixAllUrls() for all other cases (i.e. currently: replace all urls)
             # (XML needs to always go through here AND we want to replace all URLs)
             return fixAllUrls(data, parser, encoding)
 
