@@ -1,0 +1,20 @@
+"""Ghost Buster. Static site generator for Ghost.
+Usage:
+  buster setup [-h] [-p output/dir] repository
+  buster generate [-h] [--path output/dir] (--replace-all | --replace-tags) [source-url] [target-url]
+  buster preview [-h] [--path [output/dir]]
+  buster deploy [-h] [--path [output/dir]]
+  buster add-domain [-h] [--path [output/dir]] target-domain
+  buster -h, --help
+  buster -v, --version
+
+Options:
+  -h, --help                Show this screen.
+  -v, --version             Show version.
+  -p, --path output/dir     Output path of local directory to store static pages. [default: static]
+  source-url                Address of local Ghost installation [default: http://localhost:2368].
+  target-url                Address of target root URL (e.g. https://domain.com/path/to/root) [default: http://localhost:2368]
+  (-a | -t), (--replace-all
+  |--replace-tags)          Replace all occurrences of source-url, or only in <a> tags
+  --repository              URL of your gh-pages repository.
+"""
