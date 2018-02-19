@@ -159,6 +159,8 @@ def main():
             soup = BeautifulSoup(data, parser) # TODO: replace beautifulsoup with lxml (still beats pyQuery, though)
             # adjust all href attributes of html-link elements
             for a in soup.findAll('a'):                                                 # for each <a> element
+                if not a.has_attr('href'):
+                    continue
                 if not abs_url_regex.search(a['href']):                                 # that is not an absolute URL
                     new_href = re.sub(r'rss/index\.html$', 'rss/index.rss', a['href'])  # adjust href 1 (rss feed)
                     new_href = re.sub(r'/index\.html$', '/', new_href)                  # adjust href 2 (dir index),
