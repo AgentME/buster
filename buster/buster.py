@@ -16,11 +16,11 @@ from lxml import etree, html
 import argparse
 
 def main():
-    
+
 # Declare argparse options
-    parser = argparse.ArgumentParser(description='Ghost Buster. Static site generator for Ghost.', 
-        version='0.1.3.bs4.3', 
-        prog='buster', 
+    parser = argparse.ArgumentParser(description='Ghost Buster. Static site generator for Ghost.',
+        version='0.1.3.bs4.3',
+        prog='buster',
         add_help=True,
         epilog='Powered by ectoplasm.',
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -30,13 +30,13 @@ def main():
     subparsers = parser.add_subparsers(dest='current_action', title='actions', description='''Choose an action\n(type "%(prog)s action -h" for additional instructions)''')
 
 # Setup command
-    setup_parser = subparsers.add_parser('setup', help='Setup Github repository') 
+    setup_parser = subparsers.add_parser('setup', help='Setup Github repository')
     setup_parser._positionals.title = "required"
     setup_parser._optionals.title = "options"
     setup_parser.add_argument('repository', action='store', metavar='repository', help='URL of your gh-pages repository.')
     setup_parser.add_argument('-p', '--path', action='store', dest='static_path', default='static', metavar='output/dir', help='Output path of local directory to store static pages. (default: static)')
-    
-    
+
+
 # Generate command
     generate_parser = subparsers.add_parser('generate', help='Bust the Ghost')
     generate_parser._positionals.title = "required"
@@ -53,7 +53,7 @@ def main():
     preview_parser = subparsers.add_parser('preview', help='Local preview', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     preview_parser._optionals.title = "options"
     preview_parser.add_argument('-p', '--path', action='store', dest='static_path', default='static', metavar='output/dir', nargs="?", help='Output path of local directory to store static pages. (default: static)')
-    
+
 # Deploy command
     deploy_parser = subparsers.add_parser('deploy', help='Deploy to Github pages', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     deploy_parser._optionals.title = "options"
@@ -65,19 +65,19 @@ def main():
     add_parser._optionals.title = "options"
     add_parser.add_argument('target', action="store", metavar='target-domain', help='Address of target URL')
     add_parser.add_argument('-p', '--path', action='store', dest='static_path', metavar='output/dir', nargs='?', help='Output path of local directory to store static pages. (default: static)')
-    
+
     # print help, when run without arguments
     if len(sys.argv)==1:
         parser.print_help()
         sys.exit(1)
     args=parser.parse_args()
-    
+
     print "Running: buster " + args.current_action
-    
+
     # simplify comparison
     action = args.current_action
-    
-    
+
+
     if action == 'generate':
         command = ("wget "
                    "--recursive "             # follow links to download entire site
@@ -102,19 +102,19 @@ def main():
                     print "Rename", filename, "=>", newname
                     os.rename(os.path.join(root, filename), os.path.join(root, newname))
                     files.append(newname) # add new name to file-list
-        
+
         # remove superfluous "index.html" from relative hyperlinks found in text
         abs_url_regex = re.compile(r'^(?:[a-z]+:)?//', flags=re.IGNORECASE)
 
         # form regex from file-list (i.e. all files, with stripped arguments from above)
         url_suffix_regex = re.compile(r'(' + "|".join(files) + r')(\?.*?(?=\"))', flags = re.IGNORECASE)
 
-        def repl(m): # select regex matching group 
+        def repl(m): # select regex matching group
             print "---Removing", m.group(2), "from", m.group(1)
             return m.group(1)
 
         def fixAllUrls(data, parser, encoding):
-            
+
             # step 1:
             # load HTML/XML in lxml
             if parser == "xml": # parser for XML that keeps CDATA elements (beautifulsoup doesn't)
@@ -137,12 +137,12 @@ def main():
 
                 # go through fixTagsOnly (we'll be calling bs4 twice until above is fixed...)
                 data = fixTagsOnly(data, parser, encoding)
-                
+
                 # BeautifulSoup outputs html entities with formatter="html" (if you need them).
                 # lxml above should be faster, but outputs utf-8 numeric char refs
                 print "Fixing remaining links"
                 data = BeautifulSoup(data, "html5lib").prettify(encoding,formatter="minimal")
-                
+
             # step 2:
             # substitute all occurences of --source-url (args.source) argument with --target-url (args.target)
             data = re.sub(args.source, args.target, data)
@@ -164,12 +164,12 @@ def main():
                     print "\t", a['href'], "=>", new_href                               # brag about it,
                     a['href'] = a['href'].replace(a['href'], new_href)                  # perform replacement, and
             return soup.prettify(encoding,formatter="html") # return pretty utf-8 html with encoded html entities
-            
+
         def fixUrls(data, parser, encoding):
             # Is this is a HTML document AND are we looking only for <a> tags?
             if parser == 'lxml' and not args.replace:
                 return fixTagsOnly(data, parser, encoding)
-                
+
             # Otherwise, fall through to fixAllUrls() for all other cases (i.e. currently: replace all urls)
             # (XML needs to always go through here AND we want to replace all URLs)
             return fixAllUrls(data, parser, encoding)
@@ -187,7 +187,7 @@ def main():
                    with open(filepath) as f:
                        filetext = f.read() # beautifulsoup: convert anything to utf-8 via unicode,dammit
                    print "Fixing links in ", filepath
-                   # define output encoding, in case you want something else 
+                   # define output encoding, in case you want something else
                    # (not that this matters, since we escape non-ascii chars in html as html entities)
                    encoding = "utf-8"
                    newtext = fixUrls(filetext, parser, encoding)
@@ -205,7 +205,7 @@ def main():
         httpd.serve_forever()
 
     elif action == 'setup':
-        
+
         repo_url = args.repository
 
         # Create a fresh new static files directory
