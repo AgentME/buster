@@ -19,7 +19,7 @@ def main():
 
 # Declare argparse options
     parser = argparse.ArgumentParser(description='Ghost Buster. Static site generator for Ghost.',
-        version='0.1.3.bs4.3',
+        version='0.2.0',
         prog='buster',
         add_help=True,
         epilog='Powered by ectoplasm.',
