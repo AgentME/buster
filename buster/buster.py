@@ -80,6 +80,7 @@ def main():
 
     if action == 'generate':
         command = ("wget "
+                   "--level=0 "               # keep following links
                    "--recursive "             # follow links to download entire site
                    "--convert-links "         # make links relative
                    "--page-requisites "       # grab everything: css / inlined images
