@@ -17,7 +17,7 @@ The interface commands
 
       Creates a GIT repository inside ``--path`` directory.
 
-``generate [--path output/dir] (--replace-all | --replace-tags) [source-url] [target-url]``
+``generate [--path output/dir] [--replace-all] [source-url] [target-url]``
 
       Generates static pages from locally running Ghost instance.
 ``--replace-all`` substitutes all ``source-url`` instances with value of ``target-url``
@@ -83,7 +83,7 @@ Requirements
 The following python packages would be installed automatically when
 installed via ``pip``:
 
--  `argparse <https://docs.python.org/2/library/argparse.html>`__: Creates 
+-  `argparse <https://docs.python.org/2/library/argparse.html>`__: Creates
    powerful, functional command line interfaces.
 -  `GitPython <https://github.com/gitpython-developers/GitPython>`__:
    Python interface for GIT.

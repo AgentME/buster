@@ -44,10 +44,7 @@ def main():
     generate_parser.add_argument('-p', '--path', action='store', dest='static_path', default='static', metavar='output/dir', help='Output path of local directory to store static pages. (default: static)')
     generate_parser.add_argument('target', action='store', metavar='target-url', default='http://localhost:2368', nargs='?', help='Address of target root URL (e.g. https://domain.com/path/to/root)')
     # replacement switch
-    #TODO: Add more choices to define what to replace with --replace-all switch
-    group = generate_parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--replace-all', '-a', dest='replace', action='store_true', help='Replace all occurences of source-url')
-    group.add_argument('--replace-tags', '-t', dest='replace', action='store_false', help='Replace only URLs found in <a> tags')
+    generate_parser.add_argument('--replace-all', '-a', dest='replace', action='store_true', help='Replace all occurences of source-url, not just in link attributes')
 
 # Preview command
     preview_parser = subparsers.add_parser('preview', help='Local preview', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
