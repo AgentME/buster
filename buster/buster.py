@@ -177,22 +177,22 @@ def main():
         # fix links in all html files
         for root, dirs, filenames in os.walk(args.static_path):
             for filename in fnmatch.filter(filenames, "*.html"):
-                   filepath = os.path.join(root, filename)
-                   parser = 'lxml'              # beautifulsoup parser selection (i.e. lxml)
-                   if root.endswith("/rss"):    # rename index.html in .../rss to index.rss, TODO: implement support for sitemap
-                       parser = 'xml'           # select xml parser for this file
-                       newfilepath = os.path.join(root, os.path.splitext(filename)[0] + ".rss")
-                       os.rename(filepath, newfilepath)
-                       filepath = newfilepath
-                   with open(filepath) as f:
-                       filetext = f.read() # beautifulsoup: convert anything to utf-8 via unicode,dammit
-                   print "Fixing links in ", filepath
-                   # define output encoding, in case you want something else
-                   # (not that this matters, since we escape non-ascii chars in html as html entities)
-                   encoding = "utf-8"
-                   newtext = fixUrls(filetext, parser, encoding)
-                   with open(filepath, 'w') as f:
-                       f.write(newtext)
+                filepath = os.path.join(root, filename)
+                parser = 'lxml'              # beautifulsoup parser selection (i.e. lxml)
+                if root.endswith("/rss"):    # rename index.html in .../rss to index.rss, TODO: implement support for sitemap
+                    parser = 'xml'           # select xml parser for this file
+                    newfilepath = os.path.join(root, os.path.splitext(filename)[0] + ".rss")
+                    os.rename(filepath, newfilepath)
+                    filepath = newfilepath
+                with open(filepath) as f:
+                    filetext = f.read() # beautifulsoup: convert anything to utf-8 via unicode,dammit
+                print "Fixing links in ", filepath
+                # define output encoding, in case you want something else
+                # (not that this matters, since we escape non-ascii chars in html as html entities)
+                encoding = "utf-8"
+                newtext = fixUrls(filetext, parser, encoding)
+                with open(filepath, 'w') as f:
+                    f.write(newtext)
 
     elif action == 'preview':
         os.chdir(args.static_path)
