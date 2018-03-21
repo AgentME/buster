@@ -40,7 +40,7 @@ def main():
 # Generate command
     generate_parser = subparsers.add_parser('generate', help='Bust the Ghost')
     generate_parser._positionals.title = "required"
-    generate_parser.add_argument('source', action='store', default='http://localhost:2368', metavar='source-url', nargs='?', help='Address of local Ghost installation (default: http:/localhost:2368)')
+    generate_parser.add_argument('source', action='store', default='http://localhost:2368', metavar='source-url', nargs='?', help='Address of local Ghost installation (default: http://localhost:2368)')
     generate_parser.add_argument('-p', '--path', action='store', dest='static_path', default='static', metavar='output/dir', help='Output path of local directory to store static pages. (default: static)')
     generate_parser.add_argument('target', action='store', metavar='target-url', default='http://localhost:2368', nargs='?', help='Address of target root URL (e.g. https://domain.com/path/to/root)')
     # replacement switch
