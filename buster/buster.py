@@ -6,25 +6,25 @@ import re
 import sys
 import fnmatch
 import shutil
-import SocketServer
-import SimpleHTTPServer
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from time import gmtime, strftime
-from git import Repo
 from io import StringIO, BytesIO
 from bs4 import BeautifulSoup
 from lxml import etree, html
 import argparse
+import _version
 
 def main():
 
 # Declare argparse options
     parser = argparse.ArgumentParser(description='Ghost Buster. Static site generator for Ghost.',
-        version='0.2.0',
         prog='buster',
         add_help=True,
         epilog='Powered by ectoplasm.',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser._optionals.title = "options"
+
+    parser.add_argument('--version', action='version', version=_version.__version__)
 
 # Init subparsers
     subparsers = parser.add_subparsers(dest='current_action', title='actions', description='''Choose an action\n(type "%(prog)s action -h" for additional instructions)''')
@@ -69,7 +69,7 @@ def main():
         sys.exit(1)
     args=parser.parse_args()
 
-    print "Running: buster " + args.current_action
+    print("Running: buster " + args.current_action)
 
     # simplify comparison
     action = args.current_action
@@ -97,7 +97,7 @@ def main():
             for filename in filenames:
                 if file_regex.match(filename):
                     newname = re.sub(r'\?.*', '', filename)
-                    print "Rename", filename, "=>", newname
+                    print("Rename " + filename + " => " + newname)
                     os.rename(os.path.join(root, filename), os.path.join(root, newname))
                     files.append(newname) # add new name to file-list
 
@@ -108,38 +108,38 @@ def main():
         url_suffix_regex = re.compile(r'(' + "|".join(files) + r')(\?.*?(?=\"))', flags = re.IGNORECASE)
 
         def repl(m): # select regex matching group
-            print "---Removing", m.group(2), "from", m.group(1)
+            print("---Removing " + m.group(2) + " from " + m.group(1))
             return m.group(1)
 
-        def fixAllUrls(data, parser, encoding):
+        def fixAllUrls(data, parser):
 
             # step 1:
             # load HTML/XML in lxml
             if parser == "xml": # parser for XML that keeps CDATA elements (beautifulsoup doesn't)
-                print "Fixing XML"
-                parser = etree.XMLParser(encoding=encoding, strip_cdata=False, resolve_entities=True)
-                data = etree.XML(data, parser)
+                print("Fixing XML")
+                parser = etree.XMLParser(strip_cdata=False, resolve_entities=True)
+                data = etree.XML(data.encode(), parser)
                 # format the parsed xml for output (keep all non-ascii chars inside CDATA)
-                data = etree.tostring(data, pretty_print=True, encoding=encoding)
-            if parser == "lxml": # parser for HTML ("lenient" setting for html5)
-                print "Fixing HTML"
+                data = etree.tostring(data, pretty_print=True, encoding="utf-8").decode()
+            elif parser == "lxml": # parser for HTML ("lenient" setting for html5)
+                print("Fixing HTML")
 
                 # the following should work, but spits out utf-8 numeric character references...
                 # TODO: FIXME
-                # parser = etree.HTMLParser(encoding=encoding, strip_cdata=False)
+                # parser = etree.HTMLParser(strip_cdata=False)
                 # if isinstance(data, str):
-                #     data = unicode(data, encoding)
+                #     data = unicode(data, "utf-8")
                 # data = etree.parse(StringIO(data), parser)
                 # data = html.tostring(data.getroot(), pretty_print=True, method="html")
                 # data = u'<!DOCTYPE html>\n' + unicode(data)
 
                 # go through fixTagsOnly (we'll be calling bs4 twice until above is fixed...)
-                data = fixTagsOnly(data, parser, encoding)
+                data = fixTagsOnly(data, parser)
 
                 # BeautifulSoup outputs html entities with formatter="html" (if you need them).
                 # lxml above should be faster, but outputs utf-8 numeric char refs
-                print "Fixing remaining links"
-                data = BeautifulSoup(data, "html5lib").prettify(encoding,formatter="minimal")
+                print("Fixing remaining links")
+                data = BeautifulSoup(data, "html5lib").prettify(formatter="minimal")
 
             # step 2:
             # substitute all occurences of --source-url (args.source) argument with --target-url (args.target)
@@ -151,8 +151,8 @@ def main():
             data = url_suffix_regex.sub(repl, data)
             return data
 
-        def fixTagsOnly(data, parser, encoding):
-            print "Fixing tags"
+        def fixTagsOnly(data, parser):
+            print("Fixing tags")
             soup = BeautifulSoup(data, parser) # TODO: replace beautifulsoup with lxml (still beats pyQuery, though)
             # adjust all href attributes of html-link elements
             for a in soup.select('a, link'):                                           # for each <a> element
@@ -161,18 +161,18 @@ def main():
                 if not abs_url_regex.search(a['href']):                                 # that is not an absolute URL
                     new_href = re.sub(r'rss/index\.html$', 'rss/index.rss', a['href'])  # adjust href 1 (rss feed)
                     new_href = re.sub(r'/index\.html$', '/', new_href)                  # adjust href 2 (dir index),
-                    print "\t", a['href'], "=>", new_href                               # brag about it,
+                    print("\t" + a['href'] + " => " + new_href)                         # brag about it,
                     a['href'] = new_href                                                # perform replacement, and
-            return soup.prettify(encoding,formatter="html") # return pretty utf-8 html with encoded html entities
+            return soup.prettify(formatter="html") # return pretty utf-8 html with encoded html entities
 
-        def fixUrls(data, parser, encoding):
+        def fixUrls(data, parser):
             # Is this is a HTML document AND are we looking only for <a> tags?
             if parser == 'lxml' and not args.replace:
-                return fixTagsOnly(data, parser, encoding)
+                return fixTagsOnly(data, parser)
 
             # Otherwise, fall through to fixAllUrls() for all other cases (i.e. currently: replace all urls)
             # (XML needs to always go through here AND we want to replace all URLs)
-            return fixAllUrls(data, parser, encoding)
+            return fixAllUrls(data, parser)
 
         # fix links in all html files
         for root, dirs, filenames in os.walk(args.static_path):
@@ -186,21 +186,17 @@ def main():
                     filepath = newfilepath
                 with open(filepath) as f:
                     filetext = f.read() # beautifulsoup: convert anything to utf-8 via unicode,dammit
-                print "Fixing links in ", filepath
-                # define output encoding, in case you want something else
-                # (not that this matters, since we escape non-ascii chars in html as html entities)
-                encoding = "utf-8"
-                newtext = fixUrls(filetext, parser, encoding)
+                print("Fixing links in " + filepath)
+                newtext = fixUrls(filetext, parser)
                 with open(filepath, 'w') as f:
                     f.write(newtext)
 
     elif action == 'preview':
         os.chdir(args.static_path)
+        server_address = ('', 9000)
+        httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
 
-        Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
-        httpd = SocketServer.TCPServer(("", 9000), Handler)
-
-        print "Serving at port 9000"
+        print("Serving at port 9000")
         # gracefully handle interrupt here
         httpd.serve_forever()
 
@@ -236,29 +232,31 @@ def main():
         with open(file_path, 'w') as f:
             f.write('# Blog\nPowered by [Ghost](http://ghost.org) and [Buster](https://github.com/axitkhurana/buster/).\n')
 
-        print "All set! You can generate and deploy now."
+        print("All set! You can generate and deploy now.")
 
     elif action == 'deploy':
-        repo = Repo(args.static_path)
-        repo.git.add('.')
+        raise NotImplementedError("TODO update to use python3-compatible library")
+        # repo = Repo(args.static_path)
+        # repo.git.add('.')
 
-        current_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        repo.index.commit('Blog update at {}'.format(current_time))
+        # current_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        # repo.index.commit('Blog update at {}'.format(current_time))
 
-        origin = repo.remotes.origin
-        repo.git.execute(['git', 'push', '-u', origin.name,
-                         repo.active_branch.name])
-        print "Good job! Deployed to Github Pages."
+        # origin = repo.remotes.origin
+        # repo.git.execute(['git', 'push', '-u', origin.name,
+        #                  repo.active_branch.name])
+        # print("Good job! Deployed to Github Pages.")
 
     elif action == 'add-domain':
-        repo = Repo(args.static_path)
-        custom_domain = args.target
+        raise NotImplementedError("TODO update to use python3-compatible library")
+        # repo = Repo(args.static_path)
+        # custom_domain = args.target
 
-        file_path = os.path.join(args.static_path, 'CNAME')
-        with open(file_path, 'w') as f:
-            f.write(custom_domain + '\n')
+        # file_path = os.path.join(args.static_path, 'CNAME')
+        # with open(file_path, 'w') as f:
+        #     f.write(custom_domain + '\n')
 
-        print "Added CNAME file to repo. Use `deploy` to deploy"
+        # print("Added CNAME file to repo. Use `deploy` to deploy")
 
     else: # probably unnecessary
         parser.print_help()
