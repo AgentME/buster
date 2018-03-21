@@ -219,7 +219,7 @@ def main():
         # User/Organization page -> master branch
         # Project page -> gh-pages branch
         branch = 'gh-pages'
-        regex = re.compile(".*[\w-]+\.github\.(?:io|com).*")
+        regex = re.compile(r".*[\w-]+\.github\.(?:io|com).*")
         if regex.match(repo_url):
             branch = 'master'
 
