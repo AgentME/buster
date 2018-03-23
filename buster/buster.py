@@ -179,6 +179,9 @@ def main():
                         if el.attrib['href'] != new_href:
                             print("\t" + el.attrib['href'] + " => " + new_href)
                             el.attrib['href'] = new_href
+                    else:
+                        el.attrib['href'] = re.sub(re.escape(args.source), lambda _: args.target, el.attrib['href'])
+                        el.attrib['href'] = re.sub(re.escape(args.target) + '/rss/([?&]|$)', lambda m: args.target + '/rss/index.xml' + m.group(1), el.attrib['href'])
                 return etree.tostring(root, encoding='utf-8', pretty_print=True, method="html", doctype='<!DOCTYPE html>').decode()
             else:
                 raise Exception("Unknown kind " + kind)
