@@ -161,6 +161,8 @@ def main():
                     el.text = re.sub(source_url_pattern, lambda _: args.target, el.text)
                 for el in root.xpath('//*[@href]'):
                     el.attrib['href'] = re.sub(source_url_pattern, lambda _: args.target, el.attrib['href'])
+                for el in root.xpath('//*[local-name()="link" and namespace-uri()="http://www.w3.org/2005/Atom" and @href and @rel="self" and @type="application/rss+xml"]'):
+                    el.attrib['href'] = re.sub(r'/rss/$', '/rss/index.xml', el.attrib['href'])
 
                 return etree.tostring(root, encoding='utf-8', pretty_print=True, xml_declaration=True).decode()
             elif kind == 'html':
@@ -168,7 +170,7 @@ def main():
                 root = etree.fromstring(data.encode(), parser)
                 for el in root.xpath('//*[@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
-                        new_href = re.sub(r'rss/index\.html$', 'rss/index.rss', el.attrib['href'])
+                        new_href = re.sub(r'/rss/index\.html$', '/rss/index.xml', el.attrib['href'])
                         new_href = re.sub(r'/index\.html$', '/', new_href)
                         if el.attrib['href'] != new_href:
                             print("\t" + el.attrib['href'] + " => " + new_href)
@@ -187,9 +189,9 @@ def main():
             for filename in fnmatch.filter(filenames, "*.html"):
                 filepath = os.path.join(root, filename)
                 kind = 'html'
-                if root.endswith("/rss"):    # rename index.html in .../rss to index.rss, TODO: implement support for sitemap
+                if root.endswith("/rss"):    # rename index.html in .../rss to index.xml, TODO: implement support for sitemap
                     kind = 'xml'
-                    newfilepath = os.path.join(root, os.path.splitext(filename)[0] + ".rss")
+                    newfilepath = os.path.join(root, os.path.splitext(filename)[0] + ".xml")
                     os.rename(filepath, newfilepath)
                     filepath = newfilepath
                 with open(filepath) as f:
