@@ -2,6 +2,7 @@
 """
 
 import os
+from pathlib import PurePath, PurePosixPath
 import re
 import sys
 import fnmatch
@@ -111,7 +112,7 @@ def main():
             print("---Removing " + m.group(2) + " from " + m.group(1))
             return m.group(1)
 
-        def fixAllUrls(data, kind):
+        def fixAllUrls(relpath, data, kind):
             # step 1:
             # load HTML/XML in lxml
             if kind == "xml": # parser for XML that keeps CDATA elements (beautifulsoup doesn't)
@@ -133,7 +134,7 @@ def main():
                 # data = u'<!DOCTYPE html>\n' + unicode(data)
 
                 # go through fixTagsOnly (we'll be calling bs4 twice until above is fixed...)
-                data = fixTagsOnly(data, kind)
+                data = fixTagsOnly(relpath, data, kind)
 
                 # BeautifulSoup outputs html entities with formatter="html" (if you need them).
                 # lxml above should be faster, but outputs utf-8 numeric char refs
@@ -150,7 +151,7 @@ def main():
             data = url_suffix_regex.sub(repl, data)
             return data
 
-        def fixTagsOnly(data, kind):
+        def fixTagsOnly(relpath, data, kind):
             print("Fixing tags")
             if kind == 'xml':
                 parser = etree.XMLParser(encoding='utf-8', strip_cdata=False, resolve_entities=True)
@@ -168,6 +169,9 @@ def main():
             elif kind == 'html':
                 parser = etree.HTMLParser(encoding='utf-8')
                 root = etree.fromstring(data.encode(), parser)
+                for el in root.xpath('/html/head//link[@rel="canonical" or @rel="amphtml"][@href]'):
+                    if not abs_url_regex.search(el.attrib['href']):
+                        el.attrib['href'] = args.target + re.sub(r'/index\.html$', '/', PurePosixPath('/').joinpath(relpath.parent, el.attrib['href']).as_posix())
                 for el in root.xpath('//*[@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
                         new_href = re.sub(r'/rss/index\.html$', '/rss/index.xml', el.attrib['href'])
@@ -179,15 +183,16 @@ def main():
             else:
                 raise Exception("Unknown kind " + kind)
 
-        def fixUrls(data, kind):
+        def fixUrls(relpath, data, kind):
             if not args.replace:
-                return fixTagsOnly(data, kind)
-            return fixAllUrls(data, kind)
+                return fixTagsOnly(relpath, data, kind)
+            return fixAllUrls(relpath, data, kind)
 
         # fix links in all html files
         for root, dirs, filenames in os.walk(args.static_path):
             for filename in fnmatch.filter(filenames, "*.html"):
                 filepath = os.path.join(root, filename)
+                relpath = PurePath(os.path.relpath(filepath, args.static_path))
                 kind = 'html'
                 if root.endswith("/rss"):    # rename index.html in .../rss to index.xml, TODO: implement support for sitemap
                     kind = 'xml'
@@ -197,7 +202,7 @@ def main():
                 with open(filepath) as f:
                     filetext = f.read() # beautifulsoup: convert anything to utf-8 via unicode,dammit
                 print("Fixing links in " + filepath)
-                newtext = fixUrls(filetext, kind)
+                newtext = fixUrls(relpath, filetext, kind)
                 with open(filepath, 'w') as f:
                     f.write(newtext)
 
