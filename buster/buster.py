@@ -143,7 +143,7 @@ def main():
 
             # step 2:
             # substitute all occurences of --source-url (args.source) argument with --target-url (args.target)
-            data = re.sub(args.source, args.target, data)
+            data = re.sub(re.escape(args.source), lambda _: args.target, data)
 
             # step 3:
             # remove URL arguments (e.g. query string) from renamed files
