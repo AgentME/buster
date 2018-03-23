@@ -201,38 +201,38 @@ def main():
         httpd.serve_forever()
 
     elif action == 'setup':
+        raise NotImplementedError("TODO update to use python3-compatible library")
+        # repo_url = args.repository
 
-        repo_url = args.repository
+        # # Create a fresh new static files directory
+        # if os.path.isdir(args.static_path):
+        #     confirm = input("This will destroy everything inside " + args.static_path +
+        #                         " Are you sure you wish to continue? (y/N)").strip()
+        #     if confirm != 'y' and confirm != 'Y':
+        #         sys.exit(0)
+        #     shutil.rmtree(args.static_path)
 
-        # Create a fresh new static files directory
-        if os.path.isdir(args.static_path):
-            confirm = raw_input("This will destroy everything inside " + args.static_path +
-                                " Are you sure you wish to continue? (y/N)").strip()
-            if confirm != 'y' and confirm != 'Y':
-                sys.exit(0)
-            shutil.rmtree(args.static_path)
+        # # User/Organization page -> master branch
+        # # Project page -> gh-pages branch
+        # branch = 'gh-pages'
+        # regex = re.compile(r".*[\w-]+\.github\.(?:io|com).*")
+        # if regex.match(repo_url):
+        #     branch = 'master'
 
-        # User/Organization page -> master branch
-        # Project page -> gh-pages branch
-        branch = 'gh-pages'
-        regex = re.compile(r".*[\w-]+\.github\.(?:io|com).*")
-        if regex.match(repo_url):
-            branch = 'master'
+        # # Prepare git repository
+        # repo = Repo.init(args.static_path)
+        # git = repo.git
 
-        # Prepare git repository
-        repo = Repo.init(args.static_path)
-        git = repo.git
+        # if branch == 'gh-pages':
+        #     git.checkout(b='gh-pages')
+        # repo.create_remote('origin', repo_url)
 
-        if branch == 'gh-pages':
-            git.checkout(b='gh-pages')
-        repo.create_remote('origin', repo_url)
+        # # Add README
+        # file_path = os.path.join(args.static_path, 'README.md')
+        # with open(file_path, 'w') as f:
+        #     f.write('# Blog\nPowered by [Ghost](http://ghost.org) and [Buster](https://github.com/axitkhurana/buster/).\n')
 
-        # Add README
-        file_path = os.path.join(args.static_path, 'README.md')
-        with open(file_path, 'w') as f:
-            f.write('# Blog\nPowered by [Ghost](http://ghost.org) and [Buster](https://github.com/axitkhurana/buster/).\n')
-
-        print("All set! You can generate and deploy now.")
+        # print("All set! You can generate and deploy now.")
 
     elif action == 'deploy':
         raise NotImplementedError("TODO update to use python3-compatible library")
