@@ -108,6 +108,8 @@ def main():
         # form regex from file-list (i.e. all files, with stripped arguments from above)
         url_suffix_regex = re.compile(r'(' + "|".join(files) + r')(\?.*?(?=\"))', flags = re.IGNORECASE)
 
+        source_url_regex = re.compile('^' + re.escape(args.source))
+
         def repl(m): # select regex matching group
             print("---Removing " + m.group(2) + " from " + m.group(1))
             return m.group(1)
@@ -157,11 +159,10 @@ def main():
                 parser = etree.XMLParser(encoding='utf-8', strip_cdata=False, resolve_entities=True)
                 root = etree.fromstring(data.encode(), parser)
 
-                source_url_pattern = re.compile('^' + re.escape(args.source))
                 for el in root.xpath('//*[self::link or self::url]'):
-                    el.text = re.sub(source_url_pattern, lambda _: args.target, el.text)
+                    el.text = re.sub(source_url_regex, lambda _: args.target, el.text)
                 for el in root.xpath('//*[@href]'):
-                    el.attrib['href'] = re.sub(source_url_pattern, lambda _: args.target, el.attrib['href'])
+                    el.attrib['href'] = re.sub(source_url_regex, lambda _: args.target, el.attrib['href'])
                 for el in root.xpath('//*[local-name()="link" and namespace-uri()="http://www.w3.org/2005/Atom" and @href and @rel="self" and @type="application/rss+xml"]'):
                     el.attrib['href'] = re.sub(r'/rss/$', '/rss/index.xml', el.attrib['href'])
 
@@ -172,6 +173,9 @@ def main():
                 for el in root.xpath('/html/head//link[@rel="canonical" or @rel="amphtml"][@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
                         el.attrib['href'] = args.target + re.sub(r'/index\.html$', '/', PurePosixPath('/').joinpath(relpath.parent, el.attrib['href']).as_posix())
+                for el in root.xpath('/html/head//meta[@name or @property][@content]'):
+                    if re.search(':url$', el.attrib['name'] if 'name' in el.attrib else el.attrib['property']):
+                        el.attrib['content'] = re.sub(source_url_regex, lambda _: args.target, el.attrib['content'])
                 for el in root.xpath('//*[@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
                         new_href = re.sub(r'/rss/index\.html$', '/rss/index.xml', el.attrib['href'])
@@ -180,7 +184,9 @@ def main():
                             print("\t" + el.attrib['href'] + " => " + new_href)
                             el.attrib['href'] = new_href
                     else:
+                        # Fix social sharing links
                         el.attrib['href'] = re.sub(re.escape(args.source), lambda _: args.target, el.attrib['href'])
+                        # Fix feedly rss link
                         el.attrib['href'] = re.sub(re.escape(args.target) + '/rss/([?&]|$)', lambda m: args.target + '/rss/index.xml' + m.group(1), el.attrib['href'])
                 return etree.tostring(root, encoding='utf-8', pretty_print=True, method="html", doctype='<!DOCTYPE html>').decode()
             else:
