@@ -111,17 +111,16 @@ def main():
             print("---Removing " + m.group(2) + " from " + m.group(1))
             return m.group(1)
 
-        def fixAllUrls(data, parser):
-
+        def fixAllUrls(data, kind):
             # step 1:
             # load HTML/XML in lxml
-            if parser == "xml": # parser for XML that keeps CDATA elements (beautifulsoup doesn't)
+            if kind == "xml": # parser for XML that keeps CDATA elements (beautifulsoup doesn't)
                 print("Fixing XML")
-                parser = etree.XMLParser(strip_cdata=False, resolve_entities=True)
+                parser = etree.XMLParser(encoding='utf-8', strip_cdata=False, resolve_entities=True)
                 data = etree.XML(data.encode(), parser)
                 # format the parsed xml for output (keep all non-ascii chars inside CDATA)
-                data = etree.tostring(data, pretty_print=True, encoding="utf-8").decode()
-            elif parser == "lxml": # parser for HTML ("lenient" setting for html5)
+                data = etree.tostring(data, pretty_print=True, encoding="utf-8", xml_declaration=True).decode()
+            elif kind == "html": # parser for HTML ("lenient" setting for html5)
                 print("Fixing HTML")
 
                 # the following should work, but spits out utf-8 numeric character references...
@@ -134,7 +133,7 @@ def main():
                 # data = u'<!DOCTYPE html>\n' + unicode(data)
 
                 # go through fixTagsOnly (we'll be calling bs4 twice until above is fixed...)
-                data = fixTagsOnly(data, parser)
+                data = fixTagsOnly(data, kind)
 
                 # BeautifulSoup outputs html entities with formatter="html" (if you need them).
                 # lxml above should be faster, but outputs utf-8 numeric char refs
@@ -151,43 +150,52 @@ def main():
             data = url_suffix_regex.sub(repl, data)
             return data
 
-        def fixTagsOnly(data, parser):
+        def fixTagsOnly(data, kind):
             print("Fixing tags")
-            soup = BeautifulSoup(data, parser) # TODO: replace beautifulsoup with lxml (still beats pyQuery, though)
-            # adjust all href attributes of html-link elements
-            for a in soup.select('a, link'):                                           # for each <a> element
-                if not a.has_attr('href'):
-                    continue
-                if not abs_url_regex.search(a['href']):                                 # that is not an absolute URL
-                    new_href = re.sub(r'rss/index\.html$', 'rss/index.rss', a['href'])  # adjust href 1 (rss feed)
-                    new_href = re.sub(r'/index\.html$', '/', new_href)                  # adjust href 2 (dir index),
-                    print("\t" + a['href'] + " => " + new_href)                         # brag about it,
-                    a['href'] = new_href                                                # perform replacement, and
-            return soup.prettify(formatter="html") # return pretty utf-8 html with encoded html entities
+            if kind == 'xml':
+                parser = etree.XMLParser(encoding='utf-8', strip_cdata=False, resolve_entities=True)
+                root = etree.fromstring(data.encode(), parser)
 
-        def fixUrls(data, parser):
-            # Is this is a HTML document AND are we looking only for <a> tags?
-            if parser == 'lxml' and not args.replace:
-                return fixTagsOnly(data, parser)
+                source_url_pattern = re.compile('^' + re.escape(args.source))
+                for el in root.xpath('//*[self::link or self::url]'):
+                    el.text = re.sub(source_url_pattern, lambda _: args.target, el.text)
+                for el in root.xpath('//*[@href]'):
+                    el.attrib['href'] = re.sub(source_url_pattern, lambda _: args.target, el.attrib['href'])
 
-            # Otherwise, fall through to fixAllUrls() for all other cases (i.e. currently: replace all urls)
-            # (XML needs to always go through here AND we want to replace all URLs)
-            return fixAllUrls(data, parser)
+                return etree.tostring(root, encoding='utf-8', pretty_print=True, xml_declaration=True).decode()
+            elif kind == 'html':
+                parser = etree.HTMLParser(encoding='utf-8')
+                root = etree.fromstring(data.encode(), parser)
+                for el in root.xpath('//*[@href]'):
+                    if not abs_url_regex.search(el.attrib['href']):
+                        new_href = re.sub(r'rss/index\.html$', 'rss/index.rss', el.attrib['href'])
+                        new_href = re.sub(r'/index\.html$', '/', new_href)
+                        if el.attrib['href'] != new_href:
+                            print("\t" + el.attrib['href'] + " => " + new_href)
+                            el.attrib['href'] = new_href
+                return etree.tostring(root, encoding='utf-8', pretty_print=True, method="html", doctype='<!DOCTYPE html>').decode()
+            else:
+                raise Exception("Unknown kind " + kind)
+
+        def fixUrls(data, kind):
+            if not args.replace:
+                return fixTagsOnly(data, kind)
+            return fixAllUrls(data, kind)
 
         # fix links in all html files
         for root, dirs, filenames in os.walk(args.static_path):
             for filename in fnmatch.filter(filenames, "*.html"):
                 filepath = os.path.join(root, filename)
-                parser = 'lxml'              # beautifulsoup parser selection (i.e. lxml)
+                kind = 'html'
                 if root.endswith("/rss"):    # rename index.html in .../rss to index.rss, TODO: implement support for sitemap
-                    parser = 'xml'           # select xml parser for this file
+                    kind = 'xml'
                     newfilepath = os.path.join(root, os.path.splitext(filename)[0] + ".rss")
                     os.rename(filepath, newfilepath)
                     filepath = newfilepath
                 with open(filepath) as f:
                     filetext = f.read() # beautifulsoup: convert anything to utf-8 via unicode,dammit
                 print("Fixing links in " + filepath)
-                newtext = fixUrls(filetext, parser)
+                newtext = fixUrls(filetext, kind)
                 with open(filepath, 'w') as f:
                     f.write(newtext)
 
