@@ -4,6 +4,7 @@
 import os
 from pathlib import PurePath, PurePosixPath
 import re
+import json
 import sys
 import fnmatch
 import shutil
@@ -176,6 +177,17 @@ def main():
                 for el in root.xpath('/html/head//meta[@name or @property][@content]'):
                     if re.search(':url$', el.attrib['name'] if 'name' in el.attrib else el.attrib['property']):
                         el.attrib['content'] = re.sub(source_url_regex, lambda _: args.target, el.attrib['content'])
+                for el in root.xpath('/html/head/script[@type="application/ld+json"]'):
+                    def urlFixer(o):
+                        for key, value in o.items():
+                            if isinstance(value, str):
+                                o[key] = re.sub(source_url_regex, lambda _: args.target, o[key])
+                            elif isinstance(value, dict):
+                                urlFixer(value)
+
+                    ld = json.loads(el.text)
+                    urlFixer(ld)
+                    el.text = "\n" + json.dumps(ld, sort_keys=True, indent=4) + "\n"
                 for el in root.xpath('//*[@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
                         new_href = re.sub(r'/rss/index\.html$', '/rss/index.xml', el.attrib['href'])
