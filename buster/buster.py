@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 from lxml import etree, html
 import argparse
 import _version
+from normpath import normpath
 
 def main():
 
@@ -173,7 +174,7 @@ def main():
                 root = etree.fromstring(data.encode(), parser)
                 for el in root.xpath('/html/head//link[@rel="canonical" or @rel="amphtml"][@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
-                        el.attrib['href'] = args.target + re.sub(r'/index\.html$', '/', PurePosixPath('/').joinpath(relpath.parent, el.attrib['href']).as_posix())
+                        el.attrib['href'] = args.target + re.sub(r'(/|^)index\.html$', r'\1', normpath(PurePosixPath('/').joinpath(relpath.parent, el.attrib['href'])).as_posix())
                 for el in root.xpath('/html/head//meta[@name or @property][@content]'):
                     if re.search(':url$', el.attrib['name'] if 'name' in el.attrib else el.attrib['property']):
                         el.attrib['content'] = re.sub(source_url_regex, lambda _: args.target, el.attrib['content'])
