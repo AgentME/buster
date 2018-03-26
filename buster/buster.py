@@ -190,8 +190,8 @@ def main():
                     el.text = "\n" + json.dumps(ld, sort_keys=True, indent=4) + "\n"
                 for el in root.xpath('//*[@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
-                        new_href = re.sub(r'/rss/index\.html$', '/rss/index.xml', el.attrib['href'])
-                        new_href = re.sub(r'/index\.html$', '/', new_href)
+                        new_href = re.sub(r'(/|^)rss/index\.html$', r'\1rss/index.xml', el.attrib['href'])
+                        new_href = re.sub(r'(/|^)index\.html$', r'\1', new_href)
                         if el.attrib['href'] != new_href:
                             print("\t" + el.attrib['href'] + " => " + new_href)
                             el.attrib['href'] = new_href
