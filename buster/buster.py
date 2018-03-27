@@ -232,6 +232,13 @@ def main():
 
         # fix links in all html files
         for root, dirs, filenames in os.walk(args.static_path):
+            for filename in fnmatch.filter(filenames, 'robots.txt'):
+                filepath = os.path.join(root, filename)
+                with open(filepath) as f:
+                    filetext = f.read()
+                newtext = re.sub(re.escape(args.source), lambda _: args.target, filetext)
+                with open(filepath, 'w') as f:
+                    f.write(newtext)
             for filename in chain(*(fnmatch.filter(filenames, p) for p in ('*.html', '*.xml'))):
                 filepath = os.path.join(root, filename)
                 relpath = PurePath(os.path.relpath(filepath, args.static_path))
