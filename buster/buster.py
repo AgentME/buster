@@ -7,6 +7,7 @@ import re
 import json
 import sys
 import fnmatch
+from glob import iglob
 import shutil
 from itertools import chain
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -112,18 +113,18 @@ def main():
                     more_rss_paths.append('/' + dir + '/' + subdir + '/rss/')
         download_paths(more_rss_paths)
 
+        for filename in iglob(os.path.join(args.static_path, 'public', 'ghost-sdk*.js*')):
+            os.remove(filename)
+
         # init list of renamed files
         files = []
-
         # remove query string since Ghost 0.4
-        file_regex = re.compile(r'.*?(\?.*)')
         for root, dirs, filenames in os.walk(args.static_path):
-            for filename in filenames:
-                if file_regex.match(filename):
-                    newname = re.sub(r'\?.*', '', filename)
-                    print("Rename " + filename + " => " + newname)
-                    os.rename(os.path.join(root, filename), os.path.join(root, newname))
-                    files.append(newname) # add new name to file-list
+            for filename in fnmatch.filter(filenames, '*[?]*'):
+                newname = re.sub(r'\?.*', '', filename)
+                print("Rename " + filename + " => " + newname)
+                os.rename(os.path.join(root, filename), os.path.join(root, newname))
+                files.append(newname) # add new name to file-list
 
         # remove superfluous "index.html" from relative hyperlinks found in text
         abs_url_regex = re.compile(r'^(?:[a-z]+:)?//', flags=re.IGNORECASE)
@@ -193,6 +194,14 @@ def main():
             elif kind == 'html':
                 parser = etree.HTMLParser(encoding='utf-8')
                 root = etree.fromstring(data.encode(), parser)
+
+                # Remove ghost API javascript. Static files don't need this.
+                for el in root.xpath('//script[@type="text/javascript"][contains(@src,"public/ghost-sdk.")][contains(@src,".js")]'):
+                    el.getparent().remove(el)
+                for el in root.xpath('//script[@type="text/javascript"][not(@src)]'):
+                    if re.match(r'\s*ghost\.init\(', el.text):
+                        el.getparent().remove(el)
+
                 for el in root.xpath('/html/head//link[@rel="canonical" or @rel="amphtml"][@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
                         el.attrib['href'] = args.target + re.sub(r'(/|^)index\.html$', r'\1', normpath(PurePosixPath('/').joinpath(relpath.parent, el.attrib['href'])).as_posix())
