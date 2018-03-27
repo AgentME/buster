@@ -80,24 +80,37 @@ def main():
 
 
     if action == 'generate':
-        command = ("wget "
-                   "--level=0 "               # keep following links
-                   "--recursive "             # follow links to download entire site
-                   "--convert-links "         # make links relative
-                   "--page-requisites "       # grab everything: css / inlined images
-                   "--no-parent "             # don't go to parent level
-                   "--directory-prefix {1} "  # download contents to static/ folder
-                   "--no-host-directories "   # don't create domain named folder
-                   "--restrict-file-name=unix "  # don't escape query string
-                   "{0} "
-                   "{0}/robots.txt "
-                   "{0}/sitemap.xml "
-                   "{0}/sitemap-pages.xml "
-                   "{0}/sitemap-posts.xml "
-                   "{0}/sitemap-authors.xml "
-                   "{0}/sitemap-tags.xml "
-                   ).format(args.source, args.static_path)
-        os.system(command)
+        def download_paths(relpaths):
+            command = ("wget "
+                    "--level=0 "               # keep following links
+                    "--recursive "             # follow links to download entire site
+                    "--convert-links "         # make links relative
+                    "--page-requisites "       # grab everything: css / inlined images
+                    "--no-parent "             # don't go to parent level
+                    "--directory-prefix {0} "  # download contents to static/ folder
+                    "--no-host-directories "   # don't create domain named folder
+                    "--restrict-file-name=unix "  # don't escape query string
+                    + " ".join(args.source + x for x in relpaths)
+                    ).format(args.static_path)
+            os.system(command)
+
+        download_paths((
+            '',
+            '/robots.txt',
+            '/sitemap.xml',
+            '/sitemap-pages.xml',
+            '/sitemap-posts.xml',
+            '/sitemap-authors.xml',
+            '/sitemap-tags.xml'
+        ))
+
+        more_rss_paths = []
+        for dir in ['tag', 'author']:
+            sdir = os.path.join(args.static_path, dir)
+            if os.path.isdir(sdir):
+                for subdir in os.listdir(sdir):
+                    more_rss_paths.append('/' + dir + '/' + subdir + '/rss/')
+        download_paths(more_rss_paths)
 
         # init list of renamed files
         files = list()
