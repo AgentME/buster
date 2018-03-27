@@ -113,7 +113,7 @@ def main():
         download_paths(more_rss_paths)
 
         # init list of renamed files
-        files = list()
+        files = []
 
         # remove query string since Ghost 0.4
         file_regex = re.compile(r'.*?(\?.*)')
