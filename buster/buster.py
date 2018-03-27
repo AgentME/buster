@@ -8,6 +8,7 @@ import json
 import sys
 import fnmatch
 import shutil
+from itertools import chain
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from time import gmtime, strftime
 from io import StringIO, BytesIO
@@ -88,7 +89,14 @@ def main():
                    "--directory-prefix {1} "  # download contents to static/ folder
                    "--no-host-directories "   # don't create domain named folder
                    "--restrict-file-name=unix "  # don't escape query string
-                   "{0}").format(args.source, args.static_path)
+                   "{0} "
+                   "{0}/robots.txt "
+                   "{0}/sitemap.xml "
+                   "{0}/sitemap-pages.xml "
+                   "{0}/sitemap-posts.xml "
+                   "{0}/sitemap-authors.xml "
+                   "{0}/sitemap-tags.xml "
+                   ).format(args.source, args.static_path)
         os.system(command)
 
         # init list of renamed files
@@ -161,7 +169,7 @@ def main():
                 parser = etree.XMLParser(encoding='utf-8', strip_cdata=False, resolve_entities=True)
                 root = etree.fromstring(data.encode(), parser)
 
-                for el in root.xpath('//*[self::link or self::url]'):
+                for el in root.xpath('//*[self::link or self::url or local-name()="loc"]'):
                     el.text = re.sub(source_url_regex, lambda _: args.target, el.text)
                 for el in root.xpath('//*[@href]'):
                     el.attrib['href'] = re.sub(source_url_regex, lambda _: args.target, el.attrib['href'])
@@ -212,17 +220,20 @@ def main():
 
         # fix links in all html files
         for root, dirs, filenames in os.walk(args.static_path):
-            for filename in fnmatch.filter(filenames, "*.html"):
+            for filename in chain(*(fnmatch.filter(filenames, p) for p in ('*.html', '*.xml'))):
                 filepath = os.path.join(root, filename)
                 relpath = PurePath(os.path.relpath(filepath, args.static_path))
-                kind = 'html'
-                if root.endswith("/rss"):    # rename index.html in .../rss to index.xml, TODO: implement support for sitemap
+                kind = os.path.splitext(filename)[1][1:] # 'html' or 'xml'
+                if root.endswith("/rss"):
+                    if kind != 'html':
+                        continue
+                    # rename index.html in .../rss to index.xml
                     kind = 'xml'
                     newfilepath = os.path.join(root, os.path.splitext(filename)[0] + ".xml")
                     os.rename(filepath, newfilepath)
                     filepath = newfilepath
                 with open(filepath) as f:
-                    filetext = f.read() # beautifulsoup: convert anything to utf-8 via unicode,dammit
+                    filetext = f.read()
                 print("Fixing links in " + filepath)
                 newtext = fixUrls(relpath, filetext, kind)
                 with open(filepath, 'w') as f:
