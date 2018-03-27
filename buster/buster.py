@@ -202,7 +202,6 @@ def main():
                         new_href = re.sub(r'(/|^)rss/index\.html$', r'\1rss/index.xml', el.attrib['href'])
                         new_href = re.sub(r'(/|^)index\.html$', r'\1', new_href)
                         if el.attrib['href'] != new_href:
-                            print("\t" + el.attrib['href'] + " => " + new_href)
                             el.attrib['href'] = new_href
                     else:
                         # Fix social sharing links
