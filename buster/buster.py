@@ -205,6 +205,9 @@ def main():
 
                 for el in root.xpath('//*[self::link or self::url or local-name()="loc"]'):
                     el.text = re.sub(source_url_regex, lambda _: args.target, el.text)
+                    # /favicon.png is a redirect in ghost, so no favicon.png exists.
+                    if el.text == args.target + '/favicon.png':
+                        el.text = args.target + '/favicon.ico'
                 for el in root.xpath('//*[@href]'):
                     el.attrib['href'] = re.sub(source_url_regex, lambda _: args.target, el.attrib['href'])
                 for el in root.xpath('//*[local-name()="link" and namespace-uri()="http://www.w3.org/2005/Atom" and @href and @rel="self" and @type="application/rss+xml"]'):
