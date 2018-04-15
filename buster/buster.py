@@ -2,6 +2,7 @@
 """
 
 import os
+import subprocess
 from pathlib import PurePath, PurePosixPath
 import re
 import json
@@ -93,7 +94,7 @@ def main():
                     "--restrict-file-name=unix "  # don't escape query string
                     + " ".join(args.source + x for x in relpaths)
                     ).format(args.static_path)
-            os.system(command)
+            subprocess.run(command, shell=True, check=True)
 
         download_paths((
             '',
