@@ -83,18 +83,19 @@ def main():
 
     if action == 'generate':
         def download_paths(relpaths):
-            command = ("wget "
-                    "--level=0 "               # keep following links
-                    "--recursive "             # follow links to download entire site
-                    "--convert-links "         # make links relative
-                    "--page-requisites "       # grab everything: css / inlined images
-                    "--no-parent "             # don't go to parent level
-                    "--directory-prefix {0} "  # download contents to static/ folder
-                    "--no-host-directories "   # don't create domain named folder
-                    "--restrict-file-name=unix "  # don't escape query string
-                    + " ".join(args.source + x for x in relpaths)
-                    ).format(args.static_path)
-            subprocess.run(command, shell=True, check=True)
+            command = (
+                "wget",
+                "--level=0",               # keep following links
+                "--recursive",             # follow links to download entire site
+                "--convert-links",         # make links relative
+                "--page-requisites",       # grab everything: css / inlined images
+                "--no-parent",             # don't go to parent level
+                "--directory-prefix", args.static_path, # download contents to static/ folder
+                "--no-host-directories",   # don't create domain named folder
+                "--restrict-file-name=unix", # don't escape query string
+                *(args.source + x for x in relpaths)
+            )
+            subprocess.run(command, check=True)
 
         download_paths((
             '',
