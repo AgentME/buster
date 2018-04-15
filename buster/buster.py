@@ -279,7 +279,7 @@ def main():
                         # Fix social sharing links
                         el.attrib['href'] = re.sub(re.escape(args.source), lambda _: args.target, el.attrib['href'])
                         # Fix feedly rss link
-                        el.attrib['href'] = re.sub(re.escape(args.target) + '/rss/([?&]|$)', lambda m: args.target + '/rss/index.xml' + m.group(1), el.attrib['href'])
+                        el.attrib['href'] = re.sub(re.escape(args.target) + '((?:/[^?&]+)?)/rss/([?&]|$)', lambda m: args.target + m.group(1) + '/rss/index.xml' + m.group(2), el.attrib['href'])
                 return etree.tostring(root, encoding='utf-8', pretty_print=True, method="html", doctype='<!DOCTYPE html>').decode()
             else:
                 raise Exception("Unknown kind " + kind)
