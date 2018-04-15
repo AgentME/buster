@@ -5,3 +5,4 @@ beautifulsoup4==4.6.0
 html5lib==1.0.1
 lxml==4.2.0
 argparse==1.4.0
+subresource-integrity==0.1

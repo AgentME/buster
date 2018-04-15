@@ -16,6 +16,7 @@ from time import gmtime, strftime
 from io import StringIO, BytesIO
 from bs4 import BeautifulSoup
 from lxml import etree, html
+import subresource_integrity
 import argparse
 import _version
 from normpath import normpath
@@ -97,6 +98,15 @@ def main():
             )
             subprocess.run(command, check=True)
 
+        def download_one_file_to_destination(url, destination):
+            command = (
+                "wget",
+                "-O", destination,
+                "--restrict-file-name=unix",
+                url
+            )
+            subprocess.run(command, check=True)
+
         download_paths((
             '',
             '/robots.txt',
@@ -135,6 +145,14 @@ def main():
         url_suffix_regex = re.compile(r'(' + "|".join(files) + r')(\?.*?(?=\"))', flags = re.IGNORECASE)
 
         source_url_regex = re.compile('^' + re.escape(args.source))
+
+        # The URLs of all external files we've internalized
+        downloaded_external_scripts = set()
+
+        def calculate_sri(filename, hash):
+            with open(filename, 'rb') as f:
+                data = f.read()
+            return str(list(subresource_integrity.generate(data, [hash]))[0])
 
         def repl(m): # select regex matching group
             print("---Removing " + m.group(2) + " from " + m.group(1))
@@ -203,6 +221,33 @@ def main():
                 for el in root.xpath('//script[@type="text/javascript"][not(@src)]'):
                     if re.match(r'\s*ghost\.init\(', el.text):
                         el.getparent().remove(el)
+
+                # Copy any remote static (has integrity attr) javascript files to be local
+                for el in root.xpath('//script[@integrity][starts-with(@src,"https:")]'):
+                    src = el.attrib['src']
+                    integrity = el.attrib['integrity']
+                    integrity_hash = integrity.split('-', maxsplit=1)[0]
+                    basename_split = os.path.splitext(os.path.basename(src))
+                    destination = os.path.join(args.static_path, 'immutable', basename_split[0] + '-' + integrity + basename_split[1])
+                    if (
+                            destination not in downloaded_external_scripts and
+                            (not os.path.isfile(destination) or integrity != calculate_sri(destination, integrity_hash))
+                        ):
+                        destination_dirname = os.path.dirname(destination)
+                        if not os.path.isdir(destination_dirname):
+                            os.mkdir(destination_dirname)
+                        download_one_file_to_destination(src, destination)
+                        dl_integrity = calculate_sri(destination, integrity_hash)
+                        if integrity != dl_integrity:
+                            os.unlink(destination)
+                            print('Expected integrity', repr(integrity))
+                            print('Found integrity', repr(dl_integrity))
+                            raise Exception('Downloaded file had wrong integrity (' + destination + ')')
+                    downloaded_external_scripts.add(destination)
+                    el.attrib['src'] = os.path.relpath(destination, os.path.join(args.static_path, os.path.dirname(relpath)))
+                    del el.attrib['integrity']
+                    if 'crossorigin' in el.attrib:
+                        del el.attrib['crossorigin']
 
                 for el in root.xpath('/html/head//link[@rel="canonical" or @rel="amphtml"][@href]'):
                     if not abs_url_regex.search(el.attrib['href']):
