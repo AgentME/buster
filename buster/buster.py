@@ -50,6 +50,7 @@ def main():
     generate_parser.add_argument('source', action='store', default='http://localhost:2368', metavar='source-url', nargs='?', help='Address of local Ghost installation (default: http://localhost:2368)')
     generate_parser.add_argument('-p', '--path', action='store', dest='static_path', default='static', metavar='output/dir', help='Output path of local directory to store static pages. (default: static)')
     generate_parser.add_argument('target', action='store', metavar='target-url', default='http://localhost:2368', nargs='?', help='Address of target root URL (e.g. https://domain.com/path/to/root)')
+    generate_parser.add_argument('--header', dest='headers', action='append', nargs=1, help='Extra header to include in requests')
     # replacement switch
     generate_parser.add_argument('--replace-all', '-a', dest='replace', action='store_true', help='Replace all occurences of source-url, not just in link attributes')
 
@@ -78,6 +79,11 @@ def main():
 
     print("Running: buster " + args.current_action)
 
+    extra_wget_options = []
+    for header in args.headers or []:
+        extra_wget_options.append('--header')
+        extra_wget_options.append(header[0])
+
     # simplify comparison
     action = args.current_action
 
@@ -94,6 +100,7 @@ def main():
                 "--directory-prefix", args.static_path, # download contents to static/ folder
                 "--no-host-directories",   # don't create domain named folder
                 "--restrict-file-name=unix", # don't escape query string
+                *extra_wget_options,
                 *(args.source + x for x in relpaths)
             )
             subprocess.run(command, check=True)
@@ -103,6 +110,7 @@ def main():
                 "wget",
                 "-O", destination,
                 "--restrict-file-name=unix",
+                *extra_wget_options,
                 url
             )
             subprocess.run(command, check=True)
