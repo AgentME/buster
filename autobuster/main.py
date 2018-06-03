@@ -48,12 +48,14 @@ def handle_change():
 
     try:
         os.chmod(data_dir, 0o755)  # owner-read-write, world-readable
-        subprocess.run((
+        args = [
             "python3", "/var/buster/buster/buster.py",
             "generate", os.environ["GHOST_ADDRESS"], os.environ["STATIC_ADDRESS"],
-            "--path", data_dir,
-            "--user", "buster", "--password", os.environ["BUSTER_PASSWORD"]
-        ), check=True)
+            "--path", data_dir
+        ]
+        if "BUSTER_PASSWORD" in os.environ:
+            args.extend(("--user", "buster", "--password", os.environ["BUSTER_PASSWORD"]))
+        subprocess.run(args, check=True)
         os.symlink(data_dir, data_dir + '-symlink')
     except:
         shutil.rmtree(data_dir)
