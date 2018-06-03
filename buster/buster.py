@@ -51,6 +51,8 @@ def main():
     generate_parser.add_argument('-p', '--path', action='store', dest='static_path', default='static', metavar='output/dir', help='Output path of local directory to store static pages. (default: static)')
     generate_parser.add_argument('target', action='store', metavar='target-url', default='http://localhost:2368', nargs='?', help='Address of target root URL (e.g. https://domain.com/path/to/root)')
     generate_parser.add_argument('--header', dest='headers', action='append', nargs=1, help='Extra header to include in requests')
+    generate_parser.add_argument('--user', dest='user', action='store', nargs=1, help='HTTP user')
+    generate_parser.add_argument('--password', dest='password', action='store', nargs=1, help='HTTP password')
     # replacement switch
     generate_parser.add_argument('--replace-all', '-a', dest='replace', action='store_true', help='Replace all occurences of source-url, not just in link attributes')
 
@@ -83,6 +85,12 @@ def main():
     for header in args.headers or []:
         extra_wget_options.append('--header')
         extra_wget_options.append(header[0])
+    if args.user is not None:
+        extra_wget_options.append('--user')
+        extra_wget_options.append(args.user[0])
+    if args.password is not None:
+        extra_wget_options.append('--password')
+        extra_wget_options.append(args.password[0])
 
     # simplify comparison
     action = args.current_action
