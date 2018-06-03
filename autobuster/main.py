@@ -17,6 +17,7 @@ db_filename = '/var/lib/ghost/content/data/ghost.db'
 
 os.chdir('/var/static_ghost')
 
+GC_TIME_SECONDS = int(os.environ["GC_TIME_SECONDS"])
 
 def file_hash(filename):
     h = hashlib.sha256()
@@ -69,8 +70,11 @@ def handle_change():
         f.write(current_db_hash)
         f.write('\n')
 
+    # Delete the old data_ folders.
     for old_data_dir in glob.iglob('data_*'):
         if os.path.samefile(old_data_dir, data_dir):
+            continue
+        if time.time() - os.path.getmtime(old_data_dir) < GC_TIME_SECONDS:
             continue
         shutil.rmtree(old_data_dir)
         print('Removed old data directory: ' + old_data_dir)

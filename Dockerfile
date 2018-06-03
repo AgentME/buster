@@ -35,6 +35,7 @@ VOLUME /var/static_ghost
 
 USER ${USER}:${GROUP}
 
-ENV PYTHONUNBUFFERED=TRUE
+ENV PYTHONUNBUFFERED TRUE
+ENV GC_TIME_SECONDS 600
 
 CMD [ "/var/buster/autobuster/main.py" ]
