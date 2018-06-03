@@ -1,134 +1,76 @@
 Buster
 ======
 
-Super simple, Totally awesome, Brute force **static site generator for**
-`Ghost <http://ghost.org>`__.
+Static site generator for Ghost <http://ghost.org>.
 
-Start with a clean, no commits Github repository.
+Usage
+-----
 
-*Generate Static Pages. Preview. Deploy to Github Pages.*
+    $ python3 ./buster/buster.py generate [--path output/dir] [source-url] [target-url]`
 
-Warning! This project is a hack. It's not official. But it works for me.
+Generates static pages from a running Ghost instance. The pages will be saved
+in the static/ directory unless you override this with the `--path` option.
 
-The interface commands
-----------------------
+The source URL should be equal to the public URL configured in Ghost's config
+(or the "url" environment variable given to the Ghost Docker container), which
+should not have a trailing slash.
 
-``setup [--path output/dir] repository``
+The source URL will be rewritten in links, meta tags, etc, as the target URL.
 
-      Creates a GIT repository inside ``--path`` directory.
+    $ python3 ./buster/buster.py preview [--path [output/dir]]`
 
-``generate [--path output/dir] [--replace-all] [source-url] [target-url]``
+Serve the output directory on http://localhost:9000.
 
-      Generates static pages from locally running Ghost instance.
-``--replace-all`` substitutes all ``source-url`` instances with value of ``target-url``
+    $ python3 ./buster/buster.py [command] -h
 
-``preview [--path [output/dir]]``
+Outputs additional usage information for a command. Some commands such as
+`generate` have more optional parameters that you can see the documentation of
+by doing this.
 
-      Preview what's generated on ``localhost:9000``.
+    $ python3 -h
 
-``deploy [--path [output/dir]]``
+Outputs top-level help
 
-      Commits and deploys changes static files to Github repository.
-
-``add-domain [--path [output/dir]] target-domain``
-
-      Adds CNAME file with custom domain name as required by Github
-Pages.
-
-``buster command -h``
-      Outputs additional usage information for a command
-
-``buster -h``
-      Outputs top-level help
-
-``buster -v``
-      Prints the current buster version.
-
-Buster assumes you have ``static/`` folder in your current directory (or
-creates one during ``setup`` command). You can specify custom directory
-path using ``[--dir=<path>]`` option to any of the above commands.
-
-The ``[--replace-all=<true|false>]`` option switches between replacing
-all urls buster can find, or only ``href`` attributes in ``a`` tags.
-
-The ``[--target=<remote-address>]`` option let's you choose the target
-domain and root directory of the generated site. This is especially
-needed for the RSS/Atom feed that would otherwise point to ``--domain``.
-The option provides an alternative to changing your blog URL in Ghost's
-config.js (see below).
-
-Don't forget to change your blog URL in config.js in Ghost.
-
-
-The Installation
-----------------
-
-Installing Buster is easy with pip:
-
-    $ pip install buster
-
-You'll then have the wonderful ``buster`` command available.
-
-You could also clone the source and use the ``buster.py`` file directly.
-
-Requirements
+Installation
 ------------
 
--  wget: Use ``brew install wget`` to install wget on your Mac.
-   Available by default on most linux distributions.
+Clone the repository, and run
 
--  git: Use ``brew install git`` to install git on your Mac.
-   ``sudo apt-get install git`` on ubuntu/debian
+    $ pip3 install -r requirements.txt
 
-The following python packages would be installed automatically when
-installed via ``pip``:
-
--  `argparse <https://docs.python.org/2/library/argparse.html>`__: Creates
-   powerful, functional command line interfaces.
--  `GitPython <https://github.com/gitpython-developers/GitPython>`__:
-   Python interface for GIT.
-   `BeautifulSoup4 <http://www.crummy.com/software/BeautifulSoup/>`__:
-   Painlessly parses and creates (x)HTML(5)
-   `lxml <https://github.com/lxml/lxml/>`__: XML/HTML processor.
+You must also have wget installed on your system.
 
 Example
-_______
+-------
 
-Generate a static version of your ghost blog with all links replaces via
-``buster generate http://localhost:2368 https://foo.com --path /output/dir --replace-all``
+Generate a static version of your ghost blog via
+`python3 ./buster/buster.py generate http://localhost:2368 https://foo.com --path /output/dir`
 
-Ghost. What?
-------------
+Docker
+------
 
-`Ghost <http://ghost.org/features/>`__ is a beautifully designed,
-completely customisable and completely `Open
-Source <https://github.com/TryGhost/Ghost>`__ **Blogging Platform**. If
-you haven't tried it out yet, check it out. You'll love it.
+The docker image [agentme/buster](https://hub.docker.com/r/agentme/buster/)
+runs a script which automatically runs Buster every time Ghost's database is
+modified.
 
-The Ghost Foundation is not-for-profit organization funding open source
-software and trying to completely change the world of online publishing.
-Consider `donating to Ghost <http://ghost.org/about/donate/>`__.
+The source url should be passed as the `GHOST_ADDRESS` environment variable,
+and the target url should be passed as the `STATIC_ADDRESS` environment
+variable. An HTTP password may be supplied through the `BUSTER_PASSWORD`
+environment variable. (The HTTP user "buster" will be used if a password is
+given.)
 
-Buster?
-~~~~~~~
+The Buster docker container should have the same volume mounted as read-only
+to it that Ghost has mounted at `/var/lib/ghost/content`, and the Buster
+docker container should have a second volume mounted at `/var/static_ghost`.
+The Buster docker container will write the static files under
+`/var/static_ghost/current/`. The `/var/static_ghost/current/` directory will
+be a symlink which is automatically and atomically updated after each time
+Buster exports the site to static files, so a web server pointed at
+`/var/static_ghost/current/` will never see files from an incomplete export.
 
-Inspired by THE GhostBusters.
+About
+-----
 
-.. figure:: http://upload.wikimedia.org/wikipedia/en/c/c7/Ghostbusters_cover.png
-   :alt: Ghost Buster Movie Poster
-
-   Ghost Buster Movie
-
-Contributing
-------------
-
-Checkout the existing
-`issues <https://github.com/axitkhurana/buster/issues>`__ or create a
-new one. Pull requests welcome!
-
---------------
-
-*Made with* `jugaad <http://en.wikipedia.org/wiki/Jugaad>`__ *in*
-`Dilli <http://en.wikipedia.org/wiki/Delhi>`__.
-
-*Powered by ectoplasm.*
+This project is a fork of https://github.com/axitkhurana/buster with the
+git-related functionality removed and many bugs fixed, including supporting
+RSS feeds and text encoding correctly.
