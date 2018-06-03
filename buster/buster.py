@@ -98,6 +98,8 @@ def main():
 
     if action == 'generate':
         def download_paths(relpaths):
+            if len(relpaths) == 0:
+                return
             command = (
                 "wget",
                 "--level=0",               # keep following links
