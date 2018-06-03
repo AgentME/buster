@@ -11,7 +11,6 @@ RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--"]
 
 RUN apt-get update && apt-get install -y \
-    gosu \
     inotify-tools \
     python3 \
     python3-pip \
