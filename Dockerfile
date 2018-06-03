@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN mkdir /var/buster
 WORKDIR /var/buster
-COPY requirements.txt buster autobuster ./
+COPY . .
 
 RUN pip3 install -r requirements.txt
 
